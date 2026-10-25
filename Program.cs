@@ -1,0 +1,16 @@
+using BookingDesk;
+var builder=WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://127.0.0.1:4312");
+builder.Services.AddSingleton<BookingStore>();
+builder.Services.AddSingleton<BookingService>();
+builder.Services.AddSingleton<Availability>();
+var app=builder.Build();
+app.MapGet("/health",()=>new {status="ok"});
+app.MapGet("/bookings",(DateTime from,DateTime through,BookingService service)=>service.Between(from,through).ToArray());
+app.MapGet("/search",(string q,BookingService service)=>service.Search(q).ToArray());
+app.MapGet("/quote",(decimal price,int discount)=>new {total=Pricing.Quote(price,discount)});
+app.MapPost("/confirm",(BookingService service)=>new {confirmed=service.ConfirmPending()});
+app.MapGet("/count",(Availability service)=>new {count=service.Count()});
+app.MapPost("/bookings",(NewBooking request,Availability service)=> {service.Add(request.Guest);return Results.Ok();});
+app.Run();
+record NewBooking(string Guest);
